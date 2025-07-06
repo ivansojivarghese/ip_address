@@ -1,7 +1,21 @@
-export default function handler(req, res) {
-  // Get IP from x-forwarded-for header or fallback to req.socket.remoteAddress
+export default async function handler(req, res) {
   const forwarded = req.headers['x-forwarded-for'];
   const ip = forwarded ? forwarded.split(',')[0] : req.socket.remoteAddress;
 
-  res.status(200).json({ ip });
+  try {
+    const response = await fetch(`https://ipinfo.io/${ip}/json`);
+    const data = await response.json();
+
+    res.status(200).json({
+      ip: data.ip,
+      city: data.city,
+      region: data.region,
+      country: data.country,
+      loc: data.loc, // latitude,longitude string
+      org: data.org, // ISP
+      timezone: data.timezone
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch geolocation', details: error.message });
+  }
 }
